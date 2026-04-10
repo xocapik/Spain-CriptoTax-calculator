@@ -1,0 +1,7 @@
+Tiempo,Operación,Moneda,Cambio,Cuenta,Observación,ID de usuario
+2024-01-15 10:00:00,Buy,BTC,0.1,Spot,,123456
+24-02-20 15:30:00,Buy,ETH,2.5,Spot,Prueba short format,123456
+2024-03-10 08:15:00,Sell,BTC,-0.05,Spot,,123456
+invalid-date-here,Buy,USDT,100,Spot,Prueba invalid date,123456
+,Buy,SOL,10,Spot,Prueba empty date,123456
+24-05-12 18:45:00,Sell,ETH,-1.0,Spot,,123456

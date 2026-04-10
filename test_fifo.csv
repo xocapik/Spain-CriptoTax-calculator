@@ -1,0 +1,9 @@
+Tiempo,Operación,Moneda,Cambio,Cuenta,Observación,ID de usuario
+2024-01-01 12:00:00,Buy,BTC,1.0,Spot,Compra Inicial,123
+2024-02-01 12:00:00,Buy,BTC,0.5,Spot,Segunda Compra,123
+2024-03-01 12:00:00,Sell,BTC,-0.8,Spot,Venta Parcial Lote 1,123
+2024-04-01 12:00:00,Sell,BTC,-0.5,Spot,Venta que divide Lote 1 y 2,123
+2024-05-01 12:00:00,Sell,BTC,-0.1,Spot,Permuta SALIENTE,123
+2024-05-01 12:00:00,Buy,ETH,2.5,Spot,Permuta ENTRANTE,123
+2024-06-01 12:00:00,Staking Rewards,BTC,0.05,Earn,Rendimientos entran como coste,123
+2024-12-01 12:00:00,Sell,BTC,-100.0,Spot,Venta masiva (Fuerza advertencia Falta Compra),123

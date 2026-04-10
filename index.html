@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoTax ES — Declaración Hacienda España</title>
+    <meta name="description"
+        content="Calculadora de impuestos para criptomonedas en España. Procesa CSV de Binance y Bitmex aplicando el método FIFO. 100% local, sin envío de datos.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js" integrity="sha512-+BMamP0e7wn39JGL8nKAZ3yAQT2dL5oaXWr4ZYlTGkKOaoXM/Yj7c4oy50Ngz5yoUutAG17flueD4F6QpTlPng==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app">
+
+        <header>
+            <div class="logo">
+                <div class="logo-icon">₿</div>
+                <div>
+                    <h1>Crypto<span>Tax</span> ES <span class="badge">FIFO</span></h1>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <a href="tests.html" class="tab-btn" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                    🧪 <span style="font-size: 0.85rem;">Test Suite</span>
+                </a>
+                <div class="year-ctrl">
+                    <label for="fiscal-year">Ejercicio fiscal:</label>
+                    <select id="fiscal-year">
+                        <option value="2026">2026</option>
+                        <option value="2025" selected>2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020">2020</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <section class="card section-divider">
+            <div class="upload-title">
+                <h2>Cargar transacciones</h2>
+                <p>Arrastra o selecciona los CSV de Binance y/o Bitmex. Todo se procesa en tu navegador — ningún dato
+                    sale de tu ordenador.</p>
+            </div>
+
+            <div id="dropzone" class="dropzone">
+                <span class="dz-icon">↑</span>
+                <p>Arrastra archivos CSV aquí</p>
+                <small>o haz clic para seleccionarlos · Soporta Binance (ES/EN) y Bitmex</small>
+                <input type="file" id="file-input" multiple accept=".csv" style="display:none">
+            </div>
+
+            <div id="file-list" class="file-list"></div>
+
+            <div class="progress-wrap" id="progress-wrap">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-label" id="progress-label">Obteniendo precios históricos…</div>
+            </div>
+
+            <div id="warn-box" class="warn-box">
+                <button id="close-warn" class="warn-close">&times;</button>
+                <strong>⚠️ Advertencias detectadas</strong>
+                <ul id="warn-list"></ul>
+            </div>
+
+            <button id="process-btn" class="btn btn-primary" disabled>Calcular impuestos</button>
+        </section>
+
+        <section id="results-section" class="hidden section-divider">
+
+            <div class="results-header">
+                <div class="tabs-nav">
+                    <button class="tab-btn active" onclick="switchTab('summary')">Resumen</button>
+                    <button class="tab-btn" onclick="switchTab('renta')"
+                        style="color: var(--accent2); border-bottom: 2px solid var(--accent2);">Totales Renta
+                        (AEAT)</button>
+                    <button class="tab-btn" onclick="switchTab('trades')">Transmisiones (Detalle)</button>
+                    <button class="tab-btn" onclick="switchTab('income')">Rendimientos</button>
+                    <button class="tab-btn" onclick="switchTab('airdrops')">Airdrops</button>
+                    <button class="tab-btn" onclick="switchTab('portfolio')">Mi Cartera</button>
+                </div>
+
+                <div class="filter-ctrl">
+                    <label for="asset-filter">Filtrar Activo:</label>
+                    <select id="asset-filter">
+                        <option value="ALL">Todos los activos</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="pane-summary" class="tab-pane active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Ganancia / Pérdida neta</div>
+                        <div class="stat-value" id="stat-profit">—</div>
+                        <div class="stat-sub" id="stat-profit-sub"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Valor de transmisión total</div>
+                        <div class="stat-value neutral" id="stat-sales">—</div>
+                        <div class="stat-sub">Suma de ventas/permutas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Valor de adquisición total</div>
+                        <div class="stat-value neutral" id="stat-cost">—</div>
+                        <div class="stat-sub">Suma de costes de compra (FIFO)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Rendimientos (Staking / Earn)</div>
+                        <div class="stat-value neutral" id="stat-income">—</div>
+                        <div class="stat-sub">Capital Mobiliario — Casilla 0033</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Premios / Airdrops</div>
+                        <div class="stat-value neutral" id="stat-airdrop">—</div>
+                        <div class="stat-sub">Ganancia Patrimonial — Casilla 0304</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pane-renta" class="tab-pane">
+                <div class="card" style="border-left: 4px solid #a855f7;">
+                    <div class="card-header">
+                        <div>
+                            <h2>Totales agrupados para Renta Web (Casilla 1800-1814)</h2>
+                            <p style="font-size: .85rem; color: var(--muted); margin-top: 0.3rem;">Introduce una línea
+                                por cada moneda en el programa de Hacienda.</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="document.getElementById('export-btn').click()">⬇️
+                            Exportar CSV</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Moneda transmitida</th>
+                                    <th>Valor Adquisición Total (€)</th>
+                                    <th>Valor Transmisión Total (€)</th>
+                                    <th>Ganancia / Pérdida Neta (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="renta-body">
+                                <tr class="empty-row">
+                                    <td colspan="4">Sin datos</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pane-trades" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Detalle de operaciones — Modelo 100 (IRPF)</h2>
+                        <button class="btn btn-secondary" id="export-btn">⬇️ Exportar CSV</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th data-sort="asset">Activo</th>
+                                    <th data-sort="op">Operación</th>
+                                    <th data-sort="dateAdq">Fecha Adquisición</th>
+                                    <th data-sort="dateTrans" class="sort-asc">Fecha Transmisión</th>
+                                    <th data-sort="valAdq">V. Adquisición (€)</th>
+                                    <th data-sort="valTrans">V. Transmisión (€)</th>
+                                    <th data-sort="profit">Ganancia / Pérdida (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tax-body">
+                                <tr class="empty-row">
+                                    <td colspan="7">Sin datos</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pane-income" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Rendimientos del capital mobiliario (Casilla 0033)</h2>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Activo</th>
+                                    <th>Tipo</th>
+                                    <th>Fecha</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio (€)</th>
+                                    <th>Valor (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="income-body">
+                                <tr class="empty-row">
+                                    <td colspan="6">Sin datos</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pane-airdrops" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Ganancias Patrimoniales: Airdrops y Premios (Casilla 0304)</h2>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Activo</th>
+                                    <th>Tipo</th>
+                                    <th>Fecha</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio (€)</th>
+                                    <th>Valor (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="airdrop-body">
+                                <tr class="empty-row">
+                                    <td colspan="6">Sin datos</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pane-portfolio" class="tab-pane">
+                <div class="card inventory-card">
+                    <div class="card-header">
+                        <h2>Mi Cartera Actual <span class="badge" style="background:var(--accent)">FIFO</span></h2>
+                        <p style="font-size: .85rem; color: var(--muted)">Resumen de existencias y precios medios de
+                            adquisición.</p>
+                    </div>
+                    <div id="portfolio-grid" class="inventory-grid">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>CryptoTax ES · Procesamiento 100% local · Método FIFO según criterio AEAT · No constituye asesoría
+                fiscal.</p>
+        </footer>
+    </div>
+
+    <script src="utils/security.js"></script>
+    <script src="utils/engine.js"></script>
+    <script src="utils/parsers.js"></script>
+    <script src="utils/prices.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
