@@ -1,5 +1,7 @@
 # CryptoTax ES ₿
 
+**[🚀 Ver App en Vivo](https://xocapik.github.io/Spain-CriptoTax-calculator/)**
+
 Calculadora de impuestos para criptomonedas en España (IRPF). Esta herramienta procesa archivos CSV de transacciones de plataformas como Binance y Bitmex, aplicando el método **FIFO** (First-In-First-Out) según el criterio de la AEAT (Hacienda).
 
 ## ✨ Características
