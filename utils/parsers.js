@@ -10,13 +10,13 @@ window.TaxParsers = {
     },
 
     BINANCE_KEYS: {
-        'UTC_Time': 'ts', 'Tiempo': 'ts', '\uFEFFTiempo': 'ts', '\uFEFFUTC_Time': 'ts',
+        'UTC_Time': 'ts', 'Tiempo': 'ts', 'Time': 'ts',
         'Operation': 'op', 'Operación': 'op',
         'Coin': 'asset', 'Moneda': 'asset',
         'Change': 'amount', 'Cambio': 'amount',
         'Account': 'account', 'Cuenta': 'account',
         'Remark': 'remark', 'Observación': 'remark',
-        'User_ID': 'uid', 'ID de usuario': 'uid'
+        'User_ID': 'uid', 'ID de usuario': 'uid', 'User ID': 'uid'
     },
 
     BIN_CAT: {
@@ -102,7 +102,8 @@ window.TaxParsers = {
         return rows.map(row => {
             const n = {};
             for (const [k, v] of Object.entries(row)) {
-                const mk = this.BINANCE_KEYS[k.trim()];
+                const cleanKey = k.trim().replace(/^\uFEFF/, '');
+                const mk = this.BINANCE_KEYS[cleanKey];
                 if (mk) n[mk] = v;
             }
             n.amount = parseFloat((n.amount || '').replace(',', '.')) || 0;
@@ -153,8 +154,8 @@ window.TaxParsers = {
     },
 
     detectSource(rows) {
-        const keys = Object.keys(rows[0] || {}).map(k => k.trim());
-        if (keys.includes('UTC_Time') || keys.includes('Tiempo') || keys.includes('Coin') || keys.includes('Moneda')) return 'binance';
+        const keys = Object.keys(rows[0] || {}).map(k => k.trim().replace(/^\uFEFF/, ''));
+        if (keys.includes('UTC_Time') || keys.includes('Tiempo') || keys.includes('Time') || keys.includes('Coin') || keys.includes('Moneda')) return 'binance';
         if (keys.includes('transactType') && keys.includes('transactTime')) return 'bitmex';
         return 'unknown';
     },

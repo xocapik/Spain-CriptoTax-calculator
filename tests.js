@@ -98,6 +98,23 @@ const suite = {
             results.push({ name: "Parsing de estructura CSV Binance", pass: true });
         } catch (e) { results.push({ name: "Parsing Binance", pass: false, error: e.message }); }
 
+        // Test 3: English CSV Headers Parsing
+        try {
+            const mockEnglishRows = [
+                { 'User ID': '12345', 'Time': '25-01-01 07:46:58', 'Account': 'Spot', 'Operation': 'Buy', 'Coin': 'BTC', 'Change': '0.5', 'Remark': 'test' }
+            ];
+            const parsed = TaxParsers.parseBinance(mockEnglishRows);
+            if (parsed.length !== 1) throw new Error(`Esperados 1 fila, obtenidas ${parsed.length}`);
+            if (parsed[0].asset !== 'BTC' || parsed[0].amount !== 0.5 || parsed[0].uid !== '12345' || parsed[0].remark !== 'test') {
+                throw new Error("Datos de parseo incorrectos para cabeceras en inglés");
+            }
+            const parsedDate = TaxParsers.parseDate(parsed[0].ts);
+            if (!parsedDate || parsedDate.getFullYear() !== 2025 || parsedDate.getMonth() !== 0 || parsedDate.getDate() !== 1) {
+                throw new Error(`Fecha incorrecta parseada: ${parsed[0].ts} -> ${parsedDate}`);
+            }
+            results.push({ name: "Parsing de estructura CSV Binance con cabeceras en inglés (Time, User ID)", pass: true });
+        } catch (e) { results.push({ name: "Parsing Binance cabeceras en inglés", pass: false, error: e.message }); }
+
         renderTestGroup("Parsers e Interpretación de Datos", results);
     },
 
