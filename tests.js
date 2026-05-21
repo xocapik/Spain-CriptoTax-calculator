@@ -260,6 +260,19 @@ const suite = {
             results.push({ name: "Compra BTC con USDC + Fee BNB (Cálculo fiscal AEAT exacto)", pass: true });
         } catch (e) { results.push({ name: "Compra Compleja BTC/USDC/BNB", pass: false, error: e.message }); }
 
+        // Test 3: Fallback de precio de listado para Airdrop pre-listado
+        try {
+            // ARB no existía en 2020. Buscamos precio para 2020-01-01.
+            // Debería fallar el precio histórico (que sería 0) y devolver el primer precio de listado disponible (> 0).
+            const price = await PriceService.getPriceEur('ARB', '2020-01-01T12:00:00.000Z', null);
+            if (price <= 0) {
+                throw new Error(`Precio de ARB para 2020 obtenido como ${price}, se esperaba un valor mayor a 0 (precio de listado)`);
+            }
+            results.push({ name: `Búsqueda de primer precio de listado (Airdrop Fallback): ARB en 2020 -> ${price.toFixed(4)} €`, pass: true });
+        } catch (e) {
+            results.push({ name: "Búsqueda de primer precio de listado (Airdrop Fallback)", pass: false, error: e.message });
+        }
+
         renderTestGroup("Escenarios Complejos (Binance / Permutas)", results);
         this.runSecurityTests();
     },
